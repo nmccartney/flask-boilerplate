@@ -1,0 +1,77 @@
+# github.com/go-task/task
+
+version: "2"
+
+vars:
+  SERVICE_NAME: "flask-api"
+  DOCKER_REG: flask-api
+  DOCKER_TAG: latest
+  PYTHON_VERSION: "3.9"
+  DOCKER_REPO: "localhost:32000"
+  GIT_HASH:
+    sh: git log -1 --format=%H
+  GIT_TAG:
+    sh: git describe --tags --always
+  GIT_IMAGE_VERSION_EXPIRE: 2w
+  BUILD_DATE:
+    sh: date +%Y_%m_%d_%H_%M
+    # sh: date --utc +%Y_%m_%d_%H_%M # for linux
+  DOCKER_REPO: 'localhost:32000'
+  BUILD_TYPE: "dev"
+  TARGET_BUILD_ARG: "--target {{.BUILD_TYPE}}"
+
+tasks:
+
+  build-watch:
+    desc: Build dev container for watch cmd
+    cmds:
+      - |
+        docker -l warn build \
+        --build-arg BUILD_DATE={{.BUILD_DATE}} \
+        --build-arg BUILD_TYPE={{.BUILD_TYPE}} \
+        --build-arg GIT_HASH={{.GIT_HASH}} \
+        --build-arg GIT_TAG={{.GIT_TAG}} \
+        --target watch-dev \
+        -t {{.DOCKER_REPO}}/myproject-flask-api ./ -f ./Dockerfile
+
+  watch-dev:
+    desc: run and watch the app server in dev
+    cmds:
+      - |
+        docker run \
+        --rm \
+        -t \
+        -p 5005:5005 \
+        -p 5000:5000 \
+        -p 80:80 \
+        -v $(pwd)/:/flask-api \
+        -v  /flask-api \
+        --name {{.DOCKER_REG}}-{{.DOCKER_TAG}} \
+        {{.DOCKER_REPO}}/myproject-flask-api:{{.DOCKER_TAG}} \
+        watchmedo auto-restart --recursive --pattern="*.py" --directory="." python ./run.py
+
+  build-dev:
+    desc: Build dev container
+    cmds:
+      - |
+        docker -l warn build \
+        --build-arg BUILD_DATE={{.BUILD_DATE}} \
+        --build-arg BUILD_TYPE={{.BUILD_TYPE}} \
+        --build-arg GIT_HASH={{.GIT_HASH}} \
+        --build-arg GIT_TAG={{.GIT_TAG}} \
+        -t {{.DOCKER_REPO}}/myproject-flask-api ./ -f ./Dockerfile
+
+  run-dev:
+    desc: run the app server in dev
+    cmds:
+      - |
+        docker run \
+        --rm \
+        -t \
+        -p 5005:5005 \
+        -p 5000:5000 \
+        -p 80:80 \
+        -v $(pwd)/:/flask-api \
+        -v  /flask-api \
+        --name {{.DOCKER_REG}}-{{.DOCKER_TAG}} \
+        {{.DOCKER_REPO}}/myproject-flask-api:{{.DOCKER_TAG}}

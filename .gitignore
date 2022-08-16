@@ -1,0 +1,8 @@
+flask/
+*.pyc
+dev
+api/apidata.db
+env/
+env__/
+.vscode/symbols.json
+app/db.sqlite3
